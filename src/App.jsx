@@ -17,10 +17,10 @@ const SITES = {
     musterpPoint: "Front of site, adjacent to the site entrance on Lagonda Road",
     fireWardens: ["Mike Wilkinson", "Ruby Fowler"],
     firstAiders: [
-      { name: "David Timney", expiry: "13/06/2027" },
-      { name: "Steven Whillians", expiry: "13/06/2028" },
-      { name: "Samuel Jones", expiry: "05/11/2028" },
-      { name: "Mark Ferguson", expiry: "16/01/2029" },
+      { name: "David Timney", location: "Warehouse Office" },
+      { name: "Steven Whillians", location: "Warehouse" },
+      { name: "Samuel Jones", location: "Warehouse" },
+      { name: "Mark Ferguson", location: "Trade Shop" },
     ],
     aedLocation: "Reception, main building",
     firstAidKits: ["Goods In", "Canteen", "Embroidery Department", "Hose Department", "Signage Department"],
@@ -47,9 +47,9 @@ const SITES = {
     musterPoint: "Fire Assembly Point — south-east corner of the site, Parking Yard area adjacent to Clough Bank road (signed on site)",
     fireWardens: ["Hayley Arrowsmith", "Dave Bell"],
     firstAiders: [
-      { name: "Hayley Arrowsmith", expiry: "26/06/2028" },
-      { name: "Stuart Gosling", expiry: "23/01/2029" },
-      { name: "Oliver Gosling", expiry: "21/04/2029" },
+      { name: "Hayley Arrowsmith", location: "Office" },
+      { name: "Stuart Gosling", location: "Operations" },
+      { name: "Oliver Gosling", location: "Warehouse" },
     ],
     aedLocation: "Reception",
     firstAidKits: ["Warehouse A — Computer Bench (staff entrance)", "Cooper House — kitchen"],
@@ -163,15 +163,27 @@ function StepSiteSelect({ onSelect }) {
 }
 
 // ── STEP 1: Name & role ───────────────────────────────────────────────────────
+const BILLINGHAM_MANAGERS = [
+  { value: "", label: "Select your department manager..." },
+  { value: "Jessica Hodgson", label: "Internal Sales — Jessica Hodgson" },
+  { value: "Paul Coleman", label: "Field Sales — Paul Coleman" },
+  { value: "David Roebuck", label: "Accounts Department — David Roebuck" },
+  { value: "David Timney", label: "Warehouse & Drivers — David Timney" },
+  { value: "Jonathan Short", label: "Embroidery & Signage — Jonathan Short" },
+  { value: "Wayne McGough", label: "Hose Department — Wayne McGough" },
+  { value: "Jonathan Pierson", label: "Vending Department — Jonathan Pierson" },
+  { value: "Not sure", label: "I'm not sure" },
+];
+
 function StepDetails({ site, data, onChange, onNext }) {
-  const valid = data.name.trim() && data.role.trim() && data.manager.trim() && data.startDate;
+  const managerValid = site === "macclesfield" ? true : data.manager.trim() !== "";
+  const valid = data.name.trim() && data.role.trim() && managerValid && data.startDate;
   return (
     <div>
       <SectionHeader icon="👤" title="Your Details" subtitle="Please complete all fields before continuing." />
       {[
         { label: "Full Name", key: "name", type: "text", placeholder: "e.g. Jane Smith" },
         { label: "Job Role", key: "role", type: "text", placeholder: "e.g. Warehouse Operative" },
-        { label: "Line Manager", key: "manager", type: "text", placeholder: "e.g. David Timney" },
         { label: "Start Date", key: "startDate", type: "date" },
       ].map(({ label, key, type, placeholder }) => (
         <div key={key} style={{ marginBottom: 16 }}>
@@ -180,6 +192,17 @@ function StepDetails({ site, data, onChange, onNext }) {
             style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid #cbd5e1", fontSize: 15, boxSizing: "border-box", outline: "none" }} />
         </div>
       ))}
+      {site === "billingham" && (
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: "block", fontWeight: 600, fontSize: 14, color: "#333", marginBottom: 6 }}>Department Manager</label>
+          <select value={data.manager} onChange={e => onChange("manager", e.target.value)}
+            style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid #cbd5e1", fontSize: 15, boxSizing: "border-box", background: "#fff" }}>
+            {BILLINGHAM_MANAGERS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <NavButtons onNext={onNext} nextDisabled={!valid} />
     </div>
   );
@@ -226,6 +249,7 @@ function StepFire({ site, onNext, onBack }) {
 
       <InfoCard>
         <strong>Fire Alarm System</strong><br />{s.alarmType}
+        {site === "billingham" && <div style={{ marginTop: 8, color: "#555" }}>⏰ <strong>Weekly test:</strong> The alarm is tested every <strong>Friday at 10:00am</strong>. A short burst will sound from the test call point — do not evacuate.</div>}
         <div style={{ marginTop: 8 }}><strong>Panel location:</strong> {s.alarmPanel}</div>
       </InfoCard>
 
@@ -274,7 +298,7 @@ function StepFire({ site, onNext, onBack }) {
       )}
 
       <div style={{ marginTop: 20, marginBottom: 8, fontWeight: 600, fontSize: 14, color: "#333" }}>Confirm understanding:</div>
-      <CheckItem label="I know the sound of the fire alarm and understand when to evacuate." checked={checks.alarm} onChange={() => toggle("alarm")} />
+      <CheckItem label={site === "billingham" ? "I will listen for the fire alarm test at 10am on Friday mornings to familiarise myself with the sound, and understand when to evacuate." : "I know the sound of the fire alarm and understand when to evacuate."} checked={checks.alarm} onChange={() => toggle("alarm")} />
       <CheckItem label="I know where the fire exits and escape routes are on this site." checked={checks.exits} onChange={() => toggle("exits")} />
       <CheckItem label={`I know the muster point: ${s.musterPoint || s.musterpPoint}.`} checked={checks.muster} onChange={() => toggle("muster")} />
       <CheckItem label="I understand I must not re-enter a building until authorised." checked={checks.drill} onChange={() => toggle("drill")} />
@@ -305,9 +329,16 @@ function StepFirstAid({ site, onNext, onBack }) {
         <strong>First Aiders — {SITES[site].label}</strong>
         {s.firstAiders.map(fa => (
           <div key={fa.name} style={{ marginTop: 6, display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-            <span>▪ {fa.name}</span><span style={{ color: "#666" }}>Exp: {fa.expiry}</span>
+            <span>▪ {fa.name}</span><span style={{ color: "#666" }}>{fa.location}</span>
           </div>
         ))}
+      </InfoCard>
+      <InfoCard accent>
+        <strong>Incident Reporting</strong><br />
+        All injuries must be reported immediately — however minor. Use the online reporting system:<br />
+        <a href="https://incident-report-eight.vercel.app/" target="_blank" rel="noopener noreferrer"
+          style={{ color: PRIMARY, fontWeight: 600 }}>Report an Incident →</a><br />
+        <span style={{ fontSize: 12, color: "#555" }}>Save this link to your bookmarks or favourites on your phone.</span>
       </InfoCard>
 
       <InfoCard>
@@ -385,9 +416,13 @@ function StepReporting({ site, onNext, onBack }) {
       <SectionHeader icon="📋" title="Accident & Hazard Reporting" subtitle="All incidents must be reported — no matter how minor." />
 
       <InfoCard accent>
-        <strong>Report immediately using the Microsoft Forms incident reporting system.</strong><br />
+        <strong>Report all incidents immediately using the online reporting system.</strong><br />
         This covers: Accidents & Injuries, Near Misses, Unsafe Conditions, Property Damage, and Work-Related Illness.<br />
-        <div style={{ marginTop: 8 }}>Your line manager and the QHSE Representative (qhse@caswellsgroup.com) are notified automatically.</div>
+        <div style={{ marginTop: 10 }}>
+          <a href="https://incident-report-eight.vercel.app/" target="_blank" rel="noopener noreferrer"
+            style={{ color: PRIMARY, fontWeight: 700, fontSize: 15 }}>Report an Incident →</a><br />
+          <span style={{ fontSize: 12, color: "#555" }}>Save this link to your bookmarks or favourites on your phone.</span>
+        </div>
       </InfoCard>
 
       <InfoCard>
@@ -402,7 +437,9 @@ function StepReporting({ site, onNext, onBack }) {
       </InfoCard>
 
       <InfoCard>
-        <strong>Your first point of contact:</strong> {s.reportingContact}
+        <strong>Your first point of contact:</strong> Your line manager, then:<br />
+        <strong>Mike Wilkinson</strong> — Health & Safety<br />
+        <a href="mailto:qhse@caswellsgroup.com" style={{ color: PRIMARY }}>qhse@caswellsgroup.com</a> · 01642 379635
       </InfoCard>
 
       <div style={{ marginTop: 20, marginBottom: 8, fontWeight: 600, fontSize: 14, color: "#333" }}>Confirm understanding:</div>
@@ -494,7 +531,7 @@ function StepLicences({ site, data, onUpdate, onNext, onBack }) {
       {driverRole && (
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: "block", fontWeight: 600, fontSize: 14, marginBottom: 6 }}>Driving Licence — upload photo or scan</label>
-          <div style={{ fontSize: 12, color: "#666", marginBottom: 6 }}>Front of licence showing name, licence number, and entitlement categories.</div>
+          <div style={{ fontSize: 12, color: "#666", marginBottom: 6 }}>Front of licence only.</div>
           <input type="file" accept="image/*,.pdf" onChange={e => setDlFile(e.target.files[0])}
             style={{ fontSize: 14, width: "100%" }} />
           {dlFile && <div style={{ fontSize: 12, color: ACCENT, marginTop: 4 }}>✓ {dlFile.name} selected</div>}
