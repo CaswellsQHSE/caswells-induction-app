@@ -432,41 +432,36 @@ function StepLicences({ site, data, onUpdate, onNext, onBack }) {
     reader.readAsDataURL(file);
   });
 
-  const handleUpload = async () => {
-    setUploading(true);
-    setError("");
-    try {
-      const licenceTypes = [
-        fltRole && fltFile ? `FLT / Equipment Licence (${fltFile.name})` : null,
-        driverRole && dlFile ? `Driving Licence (${dlFile.name})` : null,
-      ].filter(Boolean).join(", ") || "None";
-
-      let fltImage = "<p>Not provided.</p>";
-      let drivingImage = "<p>Not provided.</p>";
-
-      if (fltRole && fltFile) {
-        const b64 = await fileToBase64(fltFile);
-        const mime = fltFile.type || "image/jpeg";
-        fltImage = `<img src="${b64}" alt="FLT Licence" style="max-width:600px;width:100%;border:1px solid #ccc;" />`;
-      }
-      if (driverRole && dlFile) {
-        const b64 = await fileToBase64(dlFile);
-        const mime = dlFile.type || "image/jpeg";
-        drivingImage = `<img src="${b64}" alt="Driving Licence" style="max-width:600px;width:100%;border:1px solid #ccc;" />`;
-      }
-
-      const params = {
+  const uploadFile = async (file, licenceType) => {
+    const b64 = await fileToBase64(file);
+    const response = await fetch("/api/upload-licence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         name: data.name,
         site: SITES[site].label,
         role: data.role,
         start_date: data.startDate,
         manager: data.manager,
-        licence_types: licenceTypes,
-        flt_image: fltImage,
-        driving_image: drivingImage,
-      };
+        licence_type: licenceType,
+        file_name: file.name,
+        file_base64: b64,
+        file_mime: file.type || "application/octet-stream",
+      }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || "Upload failed");
+    }
+    return response.json();
+  };
 
-      await sendEmailLicence(params);
+  const handleUpload = async () => {
+    setUploading(true);
+    setError("");
+    try {
+      if (fltRole && fltFile) await uploadFile(fltFile, "FLT / Equipment Licence");
+      if (driverRole && dlFile) await uploadFile(dlFile, "Driving Licence");
       setUploaded(true);
     } catch (e) {
       setError("Upload failed. Please email your licence to qhse@caswellsgroup.com directly, then continue.");
