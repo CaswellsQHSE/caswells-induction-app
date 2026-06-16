@@ -572,7 +572,7 @@ function StepHandoff({ site, data, onBack }) {
       <InfoCard accent>
         <strong>Final step — complete the Company Induction Form</strong><br />
         This records your personal details, confirms your understanding of company policies, and captures any remaining PPE or training requirements.<br />
-        <div style={{ marginTop: 8, fontSize: 13, color: "#555" }}>The form opens in a new tab. Return here once you've submitted it.</div>
+        <div style={{ marginTop: 8, fontSize: 13, color: "#555" }}>The form opens in a new tab.</div>
       </InfoCard>
 
       <div style={{ background: "#f8f9fa", borderRadius: 10, padding: 20, marginBottom: 20, textAlign: "center" }}>
@@ -592,7 +592,9 @@ function StepHandoff({ site, data, onBack }) {
         </div>
       )}
 
-      {!sent && <NavButtons onBack={onBack} onNext={openForm} nextLabel="Open Company Induction Form" />}
+      {!sent && (
+        <button onClick={onBack} style={{ marginTop: 8, width: "100%", padding: "12px 0", borderRadius: 8, border: `2px solid ${PRIMARY}`, background: "#fff", color: PRIMARY, fontWeight: 600, fontSize: 15, cursor: "pointer" }}>← Back</button>
+      )}
     </div>
   );
 }
