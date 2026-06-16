@@ -69,6 +69,16 @@ const SITES = {
 };
 
 // ── Emailjs send ─────────────────────────────────────────────────────────────
+async function sendEmailLicence(params) {
+  const SERVICE_ID = "service_brzbtm9";
+  const TEMPLATE_ID = "template_k1im17d";
+  const PUBLIC_KEY = "WHWYZePJuni_bJcu0";
+  const url = "https://api.emailjs.com/api/v1.0/email/send";
+  const body = { service_id: SERVICE_ID, template_id: TEMPLATE_ID, user_id: PUBLIC_KEY, template_params: params };
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error("EmailJS error " + res.status);
+}
+
 async function sendEmail(params) {
   const SERVICE_ID = "service_lphj3jw";
   const TEMPLATE_ID = "template_k8rovlt";
@@ -426,28 +436,37 @@ function StepLicences({ site, data, onUpdate, onNext, onBack }) {
     setUploading(true);
     setError("");
     try {
-      let body = `Safety Induction — Licence Upload\n\nName: ${data.name}\nSite: ${SITES[site].label}\nRole: ${data.role}\nStart Date: ${data.startDate}\n`;
-      if (fltRole && fltFile) body += `\nFLT Licence: ${fltFile.name} (attached as base64 in separate field)\n`;
-      if (driverRole && dlFile) body += `Driving Licence: ${dlFile.name} (attached as base64 in separate field)\n`;
-      if (!fltRole && !driverRole) body += "\nNo licence uploads required for this role.\n";
+      const licenceTypes = [
+        fltRole && fltFile ? `FLT / Equipment Licence (${fltFile.name})` : null,
+        driverRole && dlFile ? `Driving Licence (${dlFile.name})` : null,
+      ].filter(Boolean).join(", ") || "None";
 
-      const params = {
-        to_email: "qhse@caswellsgroup.com",
-        subject: `Induction Licence Upload — ${data.name} — ${SITES[site].label}`,
-        message: body,
-        from_name: data.name,
-      };
+      let fltImage = "<p>Not provided.</p>";
+      let drivingImage = "<p>Not provided.</p>";
 
       if (fltRole && fltFile) {
         const b64 = await fileToBase64(fltFile);
-        params.flt_licence = b64.substring(0, 50000);
+        const mime = fltFile.type || "image/jpeg";
+        fltImage = `<img src="${b64}" alt="FLT Licence" style="max-width:600px;width:100%;border:1px solid #ccc;" />`;
       }
       if (driverRole && dlFile) {
         const b64 = await fileToBase64(dlFile);
-        params.driving_licence = b64.substring(0, 50000);
+        const mime = dlFile.type || "image/jpeg";
+        drivingImage = `<img src="${b64}" alt="Driving Licence" style="max-width:600px;width:100%;border:1px solid #ccc;" />`;
       }
 
-      await sendEmail(params);
+      const params = {
+        name: data.name,
+        site: SITES[site].label,
+        role: data.role,
+        start_date: data.startDate,
+        manager: data.manager,
+        licence_types: licenceTypes,
+        flt_image: fltImage,
+        driving_image: drivingImage,
+      };
+
+      await sendEmailLicence(params);
       setUploaded(true);
     } catch (e) {
       setError("Upload failed. Please email your licence to qhse@caswellsgroup.com directly, then continue.");
@@ -504,7 +523,7 @@ function StepLicences({ site, data, onUpdate, onNext, onBack }) {
 }
 
 // ── STEP 8: Handoff to Microsoft Form ────────────────────────────────────────
-const FORM_URL = "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=OhDCfWrJdUGZM9I_f6mtmjYaKB-AedJFpW5p97gXbYlURUIyR09NMUlRWklCV0JXTU5ZUzU3TjBTOS4u";
+const FORM_URL = "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=OhDCfWrJdUGZM9I_f6mtmjYaKB-AedJFpW5p97gXbYlUM0VTSURWTE4wUkY4OU0wUDZaQ0MxU0xUNC4u";
 
 function StepHandoff({ site, data, onBack }) {
   const [sent, setSent] = useState(false);
