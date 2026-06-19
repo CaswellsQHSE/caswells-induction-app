@@ -423,8 +423,15 @@ function StepFirstAid({ site, onNext, onBack }) {
 function StepWelfare({ site, onNext, onBack }) {
   const s = SITES[site];
   const [confirmed, setConfirmed] = useState(false);
+  const [welfareLightbox, setWelfareLightbox] = useState(null);
   return (
     <div>
+      {welfareLightbox && (
+        <div onClick={() => setWelfareLightbox(null)} style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.9)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, cursor: "zoom-out" }}>
+          <img src={welfareLightbox} alt="Site plan" style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: 8, objectFit: "contain" }} />
+          <div style={{ position: "absolute", top: 16, right: 20, color: "#fff", fontSize: 28, fontWeight: 700, cursor: "pointer" }}>✕</div>
+        </div>
+      )}
       <SectionHeader icon="🏢" title="Welfare Facilities" subtitle="Know where everything is before you start work." />
 
       <InfoCard>
